@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.strumyk" name="Strumyk / Strims24" version="0.1.0" provider-name="niedziekujcie1-lang">
+<addon id="plugin.video.strumyk" name="Strumyk / Strims24" version="0.1.1" provider-name="niedziekujcie1-lang">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
   </requires>
@@ -11,6 +11,6 @@
     <description>Framework for Kodi 21 Omega. It does not bypass DRM, authentication, paywalls, or access controls.</description>
     <platform>all</platform>
     <license>GPL-3.0-or-later</license>
-    <assets><icon>icon.svg</icon></assets>
+    <assets><icon>icon.png</icon></assets>
   </extension>
 </addon>
