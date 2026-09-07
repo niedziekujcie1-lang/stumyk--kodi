@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.strumyk" name="Strumyk / Strims24" version="0.1.5" provider-name="niedziekujcie1-lang">
+<addon id="plugin.video.strumyk" name="Strumyk / Strims24" version="0.1.6" provider-name="niedziekujcie1-lang">
   <requires>
     <import addon="xbmc.python" version="3.0.1"/>
     <import addon="inputstream.adaptive" />
+    <import addon="plugin.video.youtube" optional="true" />
   </requires>
   <extension point="xbmc.python.pluginsource" library="main.py">
     <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
-    <summary>Sports categories and direct HLS/DASH playback for the configured sources</summary>
-    <description>Framework for Kodi 21 Omega. It keeps Strumyk and Strims24 as the configured source pages and supports direct playback of user-owned or licensed HLS/DASH streams through Kodi's native video player. It does not bypass DRM, authentication, paywalls, or access controls.</description>
+    <summary>Sports categories, legal Polish sources and direct HLS/DASH playback</summary>
+    <description>Framework for Kodi 21 Omega. It keeps Strumyk and Strims24 as configured source pages, adds curated official Polish-language sports sources, and supports direct playback of user-owned or licensed HLS/DASH streams through Kodi's native video player. It does not bypass DRM, authentication, paywalls, or access controls.</description>
     <platform>all</platform>
     <license>GPL-3.0-or-later</license>
     <assets><icon>icon.png</icon></assets>
