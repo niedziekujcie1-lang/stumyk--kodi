@@ -155,8 +155,8 @@ jobs:
           from xml.etree import ElementTree as ET
           root = ET.parse('site/addons.xml').getroot()
           addons = {a.attrib['id']: a.attrib['version'] for a in root.findall('addon')}
-          assert addons['plugin.video.strumyk'] == '0.1.4'
-          assert addons['repository.strumyk'] == '1.0.6'
+          assert addons['plugin.video.strumyk'] == '0.1.5'
+          assert addons['repository.strumyk'] == '1.0.7'
           assert pathlib.Path('site/addons.xml.sha256').read_text().strip()
           assert pathlib.Path('site/addons.xml.md5').read_text().strip()
           for p in pathlib.Path('site').glob('*/*.zip'):
@@ -205,8 +205,8 @@ jobs:
           import xml.etree.ElementTree as ET
           root = ET.parse('addons.xml').getroot()
           addons = {a.attrib['id']: a.attrib['version'] for a in root.findall('addon')}
-          assert addons['plugin.video.strumyk'] == '0.1.4'
-          assert addons['repository.strumyk'] == '1.0.6'
+          assert addons['plugin.video.strumyk'] == '0.1.5'
+          assert addons['repository.strumyk'] == '1.0.7'
           PY
           curl -fsSL --retry 3 --retry-delay 2 "$base/addons.xml.sha256" -o addons.xml.sha256
           python - <<'PY'
@@ -215,8 +215,8 @@ jobs:
           expected = pathlib.Path('addons.xml.sha256').read_text().split()[0]
           assert hashlib.sha256(data).hexdigest() == expected
           PY
-          curl -fsSL --retry 3 --retry-delay 2 "$base/plugin.video.strumyk/plugin.video.strumyk-0.1.4.zip" -o plugin.zip
-          curl -fsSL --retry 3 --retry-delay 2 "$base/repository.strumyk/repository.strumyk-1.0.6.zip" -o repo.zip
+          curl -fsSL --retry 3 --retry-delay 2 "$base/plugin.video.strumyk/plugin.video.strumyk-0.1.5.zip" -o plugin.zip
+          curl -fsSL --retry 3 --retry-delay 2 "$base/repository.strumyk/repository.strumyk-1.0.7.zip" -o repo.zip
           unzip -tq plugin.zip
           unzip -tq repo.zip
           python - <<'PY'
