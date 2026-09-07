@@ -38,6 +38,7 @@ def add_playable(label, url):
 
 def home():
     xbmcplugin.setPluginCategory(HANDLE, "Strumyk / Strims24")
+    xbmcplugin.setContent(HANDLE, "videos")
     add_folder("Kategorie sportowe", "categories")
     add_folder("Legalne / własne streamy", "streams")
     add_folder("Strumyk — strona źródłowa", "site_strumyk")
@@ -53,19 +54,19 @@ def categories():
 
 
 def category(category):
-    names = dict(SPORTS)
-    title = next((label for label, key in SPORTS if key == category), category)
-    url = xbmcplugin.getSetting(f"url_{category}")
-    label = xbmcplugin.getSetting(f"label_{category}") or title
+    title = next((label for label, key in SPORTS if key == category), "Inne sporty")
+    url = xbmcplugin.getSetting(HANDLE, f"url_{category}").strip()
+    label = xbmcplugin.getSetting(HANDLE, f"label_{category}").strip() or title
 
     xbmcplugin.setPluginCategory(HANDLE, title)
-    if url.strip():
-        add_playable(label.strip(), url.strip())
+    xbmcplugin.setContent(HANDLE, "videos")
+    if url:
+        add_playable(label, url)
     else:
         xbmcgui.Dialog().ok(
             title,
             "Brak skonfigurowanego legalnego/licencjonowanego streamu dla tej kategorii.\n\n"
-            "Dodaj URL HLS (.m3u8) lub DASH (.mpd) w ustawieniach dodatku."
+            "Otwórz Ustawienia dodatku i wpisz bezpośredni URL HLS (.m3u8) lub DASH (.mpd)."
         )
     xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
 
@@ -73,22 +74,28 @@ def category(category):
 def source_page(title, url):
     item = xbmcgui.ListItem(label=title)
     item.setProperty("IsPlayable", "false")
+    item.setInfo("video", {"title": title, "plot": url})
     item.setPath(url)
-    xbmcplugin.addDirectoryItem(HANDLE, url, item, False)
+    xbmcplugin.addDirectoryItem(HANDLE, plugin_url(action="info", url=url, label=title), item, False)
     xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
 
 
 def streams():
     xbmcgui.Dialog().ok(
         "Strumyk / Strims24",
-        "Dodaj legalne/licencjonowane URL-e HLS/DASH w ustawieniach dodatku."
+        "Źródła bezpośrednie są przeznaczone wyłącznie do legalnych/licencjonowanych streamów.\n\n"
+        "Skonfiguruj je w Ustawieniach dodatku, wybierając kategorię sportową i wpisując URL HLS/DASH."
     )
     xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
 
 
 def play(url, label):
-    item = xbmcgui.ListItem(label=label)
-    item.setPath(url)
+    if not url.strip():
+        xbmcgui.Dialog().notification("Strumyk / Strims24", "Brak adresu streamu.", xbmcgui.NOTIFICATION_ERROR)
+        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+        return
+    item = xbmcgui.ListItem(label=label or "Stream")
+    item.setPath(url.strip())
     xbmcplugin.setResolvedUrl(HANDLE, True, item)
 
 
@@ -104,11 +111,14 @@ def route():
     elif action == "play":
         play(params.get("url", ""), params.get("label", "Stream"))
     elif action == "site_strumyk":
-        source_page("Otwórz Strumyk", "https://strumyk.pk/")
+        source_page("Strumyk — strona źródłowa", "https://strumyk.pk/")
     elif action == "site_strims24":
-        source_page("Otwórz Strims24", "https://strims24.st/")
+        source_page("Strims24 — strona źródłowa", "https://strims24.st/")
     elif action == "streams":
         streams()
+    elif action == "info":
+        xbmcgui.Dialog().ok(params.get("label", "Źródło"), params.get("url", ""))
+        xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
     else:
         xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
 
