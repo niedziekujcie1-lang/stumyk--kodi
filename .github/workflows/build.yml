@@ -39,19 +39,45 @@ jobs:
       - name: Build repository metadata and ZIPs
         run: |
           set -euxo pipefail
-          command -v convert
-          convert plugin.video.strumyk/icon.svg -background '#111827' -alpha remove -resize 256x256 plugin.video.strumyk/icon.png
-          cp plugin.video.strumyk/icon.png repository.strumyk/icon.png
-
           python - <<'PY'
-          import hashlib, pathlib, shutil, zipfile
+          from pathlib import Path
+          import hashlib, shutil, struct, zlib, zipfile
           from xml.etree import ElementTree as ET
+
+          def write_png(path, size=256):
+              w = h = size
+              rows = []
+              for y in range(h):
+                  row = bytearray([0])
+                  for x in range(w):
+                      r, g, b = 17, 24, 39
+                      if 38 <= x < 218 and 76 <= y < 180:
+                          r, g, b = 255, 255, 255
+                      if 54 <= x < 202 and 92 <= y < 164:
+                          r, g, b = 17, 24, 39
+                      if 108 <= x < 160 and 108 <= y < 149:
+                          width = 52 - abs(y - 128) * 2
+                          if width > 0 and x <= 108 + width:
+                              r, g, b = 255, 255, 255
+                      row.extend((r, g, b))
+                  rows.append(bytes(row))
+              raw = b''.join(rows)
+              def chunk(kind, payload):
+                  return struct.pack('>I', len(payload)) + kind + payload + struct.pack('>I', zlib.crc32(kind + payload) & 0xffffffff)
+              png = b'\x89PNG\r\n\x1a\n'
+              png += chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0))
+              png += chunk(b'IDAT', zlib.compress(raw, 9))
+              png += chunk(b'IEND', b'')
+              Path(path).write_bytes(png)
+
+          write_png('plugin.video.strumyk/icon.png')
+          write_png('repository.strumyk/icon.png')
 
           EXCLUDED = {'.pyc', '.pyo', '.zip'}
           EXCLUDED_DIRS = {'__pycache__'}
 
           def addon_zip(src, out):
-              src, out = pathlib.Path(src), pathlib.Path(out)
+              src, out = Path(src), Path(out)
               if out.exists(): out.unlink()
               with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
                   for p in sorted(src.rglob('*')):
@@ -70,8 +96,8 @@ jobs:
           repo_id = repo_manifest.attrib['id']
           repo_version = repo_manifest.attrib['version']
 
-          plugin_zip = pathlib.Path('plugin.video.strumyk') / f'{plugin_id}-{plugin_version}.zip'
-          repo_zip = pathlib.Path('repository.strumyk') / f'{repo_id}-{repo_version}.zip'
+          plugin_zip = Path('plugin.video.strumyk') / f'{plugin_id}-{plugin_version}.zip'
+          repo_zip = Path('repository.strumyk') / f'{repo_id}-{repo_version}.zip'
           addon_zip('plugin.video.strumyk', plugin_zip)
           addon_zip('repository.strumyk', repo_zip)
 
@@ -79,11 +105,11 @@ jobs:
           root.append(plugin_manifest)
           root.append(repo_manifest)
           ET.ElementTree(root).write('addons.xml', encoding='utf-8', xml_declaration=True)
-          data = pathlib.Path('addons.xml').read_bytes()
-          pathlib.Path('addons.xml.sha256').write_text(hashlib.sha256(data).hexdigest() + '\n', encoding='utf-8')
-          pathlib.Path('addons.xml.md5').write_text(hashlib.md5(data).hexdigest() + '\n', encoding='utf-8')
+          data = Path('addons.xml').read_bytes()
+          Path('addons.xml.sha256').write_text(hashlib.sha256(data).hexdigest() + '\n', encoding='utf-8')
+          Path('addons.xml.md5').write_text(hashlib.md5(data).hexdigest() + '\n', encoding='utf-8')
 
-          site = pathlib.Path('site')
+          site = Path('site')
           if site.exists(): shutil.rmtree(site)
           (site / plugin_id).mkdir(parents=True)
           (site / repo_id).mkdir(parents=True)
@@ -92,9 +118,7 @@ jobs:
           shutil.copy2('addons.xml.md5', site / 'addons.xml.md5')
           shutil.copy2(plugin_zip, site / plugin_id / plugin_zip.name)
           shutil.copy2(repo_zip, site / repo_id / repo_zip.name)
-          shutil.copy2('plugin.video.strumyk/icon.svg', site / plugin_id / 'icon.svg')
           shutil.copy2('plugin.video.strumyk/icon.png', site / plugin_id / 'icon.png')
-          shutil.copy2('repository.strumyk/icon.svg', site / repo_id / 'icon.svg')
           shutil.copy2('repository.strumyk/icon.png', site / repo_id / 'icon.png')
           (site / 'index.html').write_text('<!doctype html><html><head><meta charset="utf-8"><title>Strumyk Kodi Repository</title></head><body><h1>Strumyk Kodi Repository</h1><p>Kodi repository files.</p></body></html>', encoding='utf-8')
           print('Build complete:', plugin_zip, repo_zip)
@@ -105,17 +129,18 @@ jobs:
           python - <<'PY'
           import pathlib, zipfile
           from xml.etree import ElementTree as ET
-
-          ET.parse('site/addons.xml')
+          root = ET.parse('site/addons.xml').getroot()
+          addons = {a.attrib['id']: a.attrib['version'] for a in root.findall('addon')}
+          assert addons['plugin.video.strumyk'] == '0.1.1'
+          assert addons['repository.strumyk'] == '1.0.3'
           assert pathlib.Path('site/addons.xml.sha256').read_text().strip()
           assert pathlib.Path('site/addons.xml.md5').read_text().strip()
-
           for p in pathlib.Path('site').glob('*/*.zip'):
               with zipfile.ZipFile(p) as z:
                   names = set(z.namelist())
-                  root = p.parent.name
-                  assert f'{root}/addon.xml' in names
-                  assert f'{root}/icon.png' in names
+                  root_name = p.parent.name
+                  assert f'{root_name}/addon.xml' in names
+                  assert f'{root_name}/icon.png' in names
                   assert not any(n.endswith(('.pyc', '.pyo')) or '/__pycache__/' in n for n in names)
           print('Repository package verification OK')
           PY
@@ -153,7 +178,6 @@ jobs:
           import xml.etree.ElementTree as ET
           root = ET.parse('addons.xml').getroot()
           addons = {a.attrib['id']: a.attrib['version'] for a in root.findall('addon')}
-          print(addons)
           assert 'plugin.video.strumyk' in addons
           assert 'repository.strumyk' in addons
           open('versions.env', 'w', encoding='utf-8').write(
