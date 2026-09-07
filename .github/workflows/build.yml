@@ -177,17 +177,36 @@ jobs:
           done
           test -s addons.xml
           python - <<'PY'
+          import pathlib
           import xml.etree.ElementTree as ET
           root = ET.parse('addons.xml').getroot()
           addons = {a.attrib['id']: a.attrib['version'] for a in root.findall('addon')}
-          assert 'plugin.video.strumyk' in addons
-          assert 'repository.strumyk' in addons
-          open('versions.env', 'w', encoding='utf-8').write(
-              f"PLUGIN_VERSION={addons['plugin.video.strumyk']}\nREPO_VERSION={addons['repository.strumyk']}\n"
-          )
+          assert addons['plugin.video.strumyk'] == '0.1.2'
+          assert addons['repository.strumyk'] == '1.0.4'
           PY
-          . ./versions.env
-          curl -fsSI --retry 3 --retry-delay 2 "$base/plugin.video.strumyk/plugin.video.strumyk-${PLUGIN_VERSION}.zip"
-          curl -fsSI --retry 3 --retry-delay 2 "$base/repository.strumyk/repository.strumyk-${REPO_VERSION}.zip"
-          curl -fsSL --retry 3 --retry-delay 2 "$base/addons.xml.sha256" | grep -Eq '^[0-9a-fA-F]{64}$'
+          curl -fsSL --retry 3 --retry-delay 2 "$base/addons.xml.sha256" -o addons.xml.sha256
+          python - <<'PY'
+          import hashlib, pathlib
+          data = pathlib.Path('addons.xml').read_bytes()
+          expected = pathlib.Path('addons.xml.sha256').read_text().split()[0]
+          assert hashlib.sha256(data).hexdigest() == expected
+          PY
+          curl -fsSL --retry 3 --retry-delay 2 "$base/plugin.video.strumyk/plugin.video.strumyk-0.1.2.zip" -o plugin.zip
+          curl -fsSL --retry 3 --retry-delay 2 "$base/repository.strumyk/repository.strumyk-1.0.4.zip" -o repo.zip
+          unzip -tq plugin.zip
+          unzip -tq repo.zip
+          python - <<'PY'
+          import zipfile
+          checks = [
+              ('plugin.zip', 'plugin.video.strumyk', ['plugin.video.strumyk/addon.xml', 'plugin.video.strumyk/main.py', 'plugin.video.strumyk/icon.png']),
+              ('repo.zip', 'repository.strumyk', ['repository.strumyk/addon.xml', 'repository.strumyk/icon.png']),
+          ]
+          for filename, root_name, required in checks:
+              with zipfile.ZipFile(filename) as z:
+                  names = set(z.namelist())
+                  for path in required:
+                      assert path in names, (filename, path)
+                  assert not any(n.endswith(('.pyc', '.pyo')) or '/__pycache__/' in n for n in names)
+          print('Public ZIP download and integrity test: OK')
+          PY
           echo 'GitHub Pages smoke test: OK'
