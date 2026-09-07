@@ -23,6 +23,17 @@ SOURCE_SITES = (
     ("Strims24", "https://strims24.st/"),
 )
 
+# Oficjalne polskojęzyczne źródła. Dostępność konkretnej transmisji może się zmieniać
+# zależnie od praw do wydarzenia i aktualnego programu nadawcy.
+LEGAL_PL_SOURCES = (
+    ("TVP Sport — transmisje na żywo", "https://sport.tvp.pl/"),
+    ("TVP VOD — Sport", "https://vod.tvp.pl/sport"),
+    ("Łączy nas piłka TV — PZPN", "https://www.youtube.com/c/laczynaspilkatv"),
+    ("ORLEN Basket Liga — YouTube", "https://www.youtube.com/@basketliga"),
+    ("Polski Związek Piłki Siatkowej", "https://www.pzps.pl/pl/"),
+    ("Polsat Sport", "https://www.polsatsport.pl/"),
+)
+
 
 def plugin_url(**params):
     return BASE + "?" + urlencode(params)
@@ -47,7 +58,6 @@ def prepare_player_item(label, url):
 
     kind = stream_kind(url)
     if kind in ("hls", "dash"):
-        # Kodi 19+ / Omega uses InputStream Adaptive for HLS and DASH.
         item.setProperty("inputstream", "inputstream.adaptive")
         item.setContentLookup(False)
         if kind == "hls":
@@ -81,6 +91,7 @@ def home():
     xbmcplugin.setContent(HANDLE, "videos")
     add_folder("Kategorie sportowe", "categories")
     add_folder("Legalne / własne streamy", "streams")
+    add_folder("Legalne transmisje PL", "legal_pl")
     add_folder("Źródła", "sources")
     xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
 
@@ -108,6 +119,31 @@ def category(category):
             "Otwórz Ustawienia dodatku i wpisz bezpośredni URL HLS (.m3u8) lub DASH (.mpd)."
         )
     xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
+
+
+def legal_pl():
+    xbmcplugin.setPluginCategory(HANDLE, "Legalne transmisje PL")
+    xbmcplugin.setContent(HANDLE, "videos")
+    for title, url in LEGAL_PL_SOURCES:
+        item = xbmcgui.ListItem(label=title)
+        item.setProperty("IsPlayable", "false")
+        item.setInfo("video", {"title": title, "plot": url})
+        xbmcplugin.addDirectoryItem(
+            HANDLE,
+            plugin_url(action="open_legal", url=url, label=title),
+            item,
+            False,
+        )
+    xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
+
+
+def open_legal(label, url):
+    # Otwiera oficjalną stronę/kanał źródłowy. Nie pobieramy ani nie obchodzimy
+    # zabezpieczeń serwisu; odtworzenie następuje zgodnie z możliwościami źródła.
+    item = xbmcgui.ListItem(label=label or "Oficjalne źródło")
+    item.setProperty("IsPlayable", "false")
+    item.setPath(url)
+    xbmcplugin.setResolvedUrl(HANDLE, True, item)
 
 
 def source_page(title, url):
@@ -171,6 +207,10 @@ def route():
         categories()
     elif action == "category":
         category(params.get("category", "other"))
+    elif action == "legal_pl":
+        legal_pl()
+    elif action == "open_legal":
+        open_legal(params.get("label", "Oficjalne źródło"), params.get("url", ""))
     elif action == "play":
         play(params.get("url", ""), params.get("label", "Stream"))
     elif action == "sources":
