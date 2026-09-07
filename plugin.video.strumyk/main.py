@@ -1,5 +1,5 @@
 import sys
-from urllib.parse import parse_qsl, urlencode
+from urllib.parse import parse_qsl, urlencode, urlparse
 
 import xbmcgui
 import xbmcplugin
@@ -28,6 +28,37 @@ def plugin_url(**params):
     return BASE + "?" + urlencode(params)
 
 
+def stream_kind(url):
+    try:
+        path = urlparse(url).path.lower()
+    except ValueError:
+        path = url.lower()
+    if path.endswith((".m3u8", ".m3u")):
+        return "hls"
+    if path.endswith(".mpd"):
+        return "dash"
+    return "direct"
+
+
+def prepare_player_item(label, url):
+    item = xbmcgui.ListItem(label=label or "Stream")
+    item.setProperty("IsPlayable", "true")
+    item.setProperty("VideoPlayer", "true")
+
+    kind = stream_kind(url)
+    if kind in ("hls", "dash"):
+        # Kodi 19+ / Omega uses InputStream Adaptive for HLS and DASH.
+        item.setProperty("inputstream", "inputstream.adaptive")
+        item.setContentLookup(False)
+        if kind == "hls":
+            item.setMimeType("application/vnd.apple.mpegurl")
+        else:
+            item.setMimeType("application/dash+xml")
+
+    item.setPath(url)
+    return item
+
+
 def add_folder(label, action, **params):
     item = xbmcgui.ListItem(label=label)
     item.setProperty("IsPlayable", "false")
@@ -36,11 +67,7 @@ def add_folder(label, action, **params):
 
 def add_playable(label, url):
     clean_url = url.strip()
-    item = xbmcgui.ListItem(label=label)
-    item.setProperty("IsPlayable", "true")
-    if clean_url.lower().endswith((".m3u8", ".m3u", ".mpd")):
-        item.setProperty("inputstream", "inputstream.adaptive")
-    item.setPath(clean_url)
+    item = prepare_player_item(label, clean_url)
     xbmcplugin.addDirectoryItem(
         HANDLE,
         plugin_url(action="play", url=clean_url, label=label),
@@ -107,7 +134,8 @@ def streams():
     xbmcgui.Dialog().ok(
         "Strumyk / Strims24",
         "Źródła bezpośrednie są przeznaczone wyłącznie do legalnych/licencjonowanych streamów.\n\n"
-        "Skonfiguruj je w Ustawieniach dodatku, wybierając kategorię sportową i wpisując URL HLS/DASH."
+        "Skonfiguruj je w Ustawieniach dodatku, wybierając kategorię sportową i wpisując URL HLS/DASH.\n\n"
+        "Po zapisaniu otwórz kategorię i wybierz pozycję streamu — Kodi uruchomi wbudowany odtwarzacz wideo."
     )
     xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
 
@@ -123,11 +151,7 @@ def play(url, label):
         xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
         return
 
-    item = xbmcgui.ListItem(label=label or "Stream")
-    lower_url = clean_url.lower()
-    if lower_url.endswith((".m3u8", ".m3u", ".mpd")):
-        item.setProperty("inputstream", "inputstream.adaptive")
-    item.setPath(clean_url)
+    item = prepare_player_item(label, clean_url)
     xbmcplugin.setResolvedUrl(HANDLE, True, item)
 
 
