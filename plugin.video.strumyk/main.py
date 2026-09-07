@@ -18,6 +18,11 @@ SPORTS = (
     ("Inne sporty", "other"),
 )
 
+SOURCE_SITES = (
+    ("Strumyk", "https://strumyk.pk/"),
+    ("Strims24", "https://strims24.st/"),
+)
+
 
 def plugin_url(**params):
     return BASE + "?" + urlencode(params)
@@ -30,10 +35,18 @@ def add_folder(label, action, **params):
 
 
 def add_playable(label, url):
+    clean_url = url.strip()
     item = xbmcgui.ListItem(label=label)
     item.setProperty("IsPlayable", "true")
-    item.setPath(url)
-    xbmcplugin.addDirectoryItem(HANDLE, plugin_url(action="play", url=url, label=label), item, False)
+    if clean_url.lower().endswith((".m3u8", ".m3u", ".mpd")):
+        item.setProperty("inputstream", "inputstream.adaptive")
+    item.setPath(clean_url)
+    xbmcplugin.addDirectoryItem(
+        HANDLE,
+        plugin_url(action="play", url=clean_url, label=label),
+        item,
+        False,
+    )
 
 
 def home():
@@ -41,8 +54,7 @@ def home():
     xbmcplugin.setContent(HANDLE, "videos")
     add_folder("Kategorie sportowe", "categories")
     add_folder("Legalne / własne streamy", "streams")
-    add_folder("Strumyk — strona źródłowa", "site_strumyk")
-    add_folder("Strims24 — strona źródłowa", "site_strims24")
+    add_folder("Źródła", "sources")
     xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
 
 
@@ -76,7 +88,18 @@ def source_page(title, url):
     item.setProperty("IsPlayable", "false")
     item.setInfo("video", {"title": title, "plot": url})
     item.setPath(url)
-    xbmcplugin.addDirectoryItem(HANDLE, plugin_url(action="info", url=url, label=title), item, False)
+    xbmcplugin.addDirectoryItem(
+        HANDLE,
+        plugin_url(action="info", url=url, label=title),
+        item,
+        False,
+    )
+
+
+def sources():
+    xbmcplugin.setPluginCategory(HANDLE, "Źródła")
+    for title, url in SOURCE_SITES:
+        source_page(title, url)
     xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
 
 
@@ -90,18 +113,34 @@ def streams():
 
 
 def play(url, label):
-    if not url.strip():
-        xbmcgui.Dialog().notification("Strumyk / Strims24", "Brak adresu streamu.", xbmcgui.NOTIFICATION_ERROR)
+    clean_url = url.strip()
+    if not clean_url:
+        xbmcgui.Dialog().notification(
+            "Strumyk / Strims24",
+            "Brak adresu streamu.",
+            xbmcgui.NOTIFICATION_ERROR,
+        )
         xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
         return
+
     item = xbmcgui.ListItem(label=label or "Stream")
-    item.setPath(url.strip())
+    lower_url = clean_url.lower()
+    if lower_url.endswith((".m3u8", ".m3u", ".mpd")):
+        item.setProperty("inputstream", "inputstream.adaptive")
+    item.setPath(clean_url)
     xbmcplugin.setResolvedUrl(HANDLE, True, item)
 
 
+def show_info(label, url):
+    xbmcgui.Dialog().ok(label or "Źródło", url or "")
+    xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
+
+
 def route():
-    params = dict(parse_qsl(sys.argv[2][1:] if len(sys.argv) > 2 else ""))
+    query = sys.argv[2][1:] if len(sys.argv) > 2 and sys.argv[2].startswith("?") else ""
+    params = dict(parse_qsl(query, keep_blank_values=True))
     action = params.get("action")
+
     if not action:
         home()
     elif action == "categories":
@@ -110,15 +149,16 @@ def route():
         category(params.get("category", "other"))
     elif action == "play":
         play(params.get("url", ""), params.get("label", "Stream"))
+    elif action == "sources":
+        sources()
     elif action == "site_strumyk":
-        source_page("Strumyk — strona źródłowa", "https://strumyk.pk/")
+        source_page("Strumyk", SOURCE_SITES[0][1])
     elif action == "site_strims24":
-        source_page("Strims24 — strona źródłowa", "https://strims24.st/")
+        source_page("Strims24", SOURCE_SITES[1][1])
     elif action == "streams":
         streams()
     elif action == "info":
-        xbmcgui.Dialog().ok(params.get("label", "Źródło"), params.get("url", ""))
-        xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
+        show_info(params.get("label", "Źródło"), params.get("url", ""))
     else:
         xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
 
