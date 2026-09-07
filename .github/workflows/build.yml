@@ -66,6 +66,7 @@ jobs:
           shutil.copy2(repo_zip, site / 'repository.strumyk' / repo_zip.name)
           shutil.copy2('plugin.video.strumyk/icon.svg', site / 'plugin.video.strumyk' / 'icon.svg')
           shutil.copy2('plugin.video.strumyk/icon.svg', site / 'repository.strumyk' / 'icon.svg')
+          (site / 'index.html').write_text('<!doctype html><html><head><meta charset="utf-8"><title>Strumyk Kodi Repository</title></head><body><h1>Strumyk Kodi Repository</h1><p>Kodi repository files.</p></body></html>', encoding='utf-8')
           print('Build complete')
           PY
       - name: Upload Pages artifact
@@ -83,3 +84,9 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify public Pages endpoint
+        run: |
+          set -eux
+          curl --fail --location --silent --show-error --retry 5 --retry-delay 3 https://niedziekujcie1-lang.github.io/stumyk--kodi/addons.xml -o /tmp/addons.xml
+          grep -q 'plugin.video.strumyk' /tmp/addons.xml
+          curl --fail --location --silent --show-error --retry 5 --retry-delay 3 -I https://niedziekujcie1-lang.github.io/stumyk--kodi/repository.strumyk/repository.strumyk-1.0.0.zip
