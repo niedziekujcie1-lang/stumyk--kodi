@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<settings version="1">
+  <section id="plugin.video.strumyk">
+    <category id="streams" label="Legalne / własne streamy">
+      <group id="football" label="Piłka nożna">
+        <setting id="label_football" type="string" label="Nazwa streamu">
+          <default>Piłka nożna</default>
+          <control type="edit" format="string" />
+        </setting>
+        <setting id="url_football" type="string" label="URL HLS/DASH">
+          <default></default>
+          <control type="edit" format="string" />
+        </setting>
+      </group>
+      <group id="basketball" label="Koszykówka">
+        <setting id="label_basketball" type="string" label="Nazwa streamu">
+          <default>Koszykówka</default>
+          <control type="edit" format="string" />
+        </setting>
+        <setting id="url_basketball" type="string" label="URL HLS/DASH">
+          <default></default>
+          <control type="edit" format="string" />
+        </setting>
+      </group>
+      <group id="volleyball" label="Siatkówka">
+        <setting id="label_volleyball" type="string" label="Nazwa streamu">
+          <default>Siatkówka</default>
+          <control type="edit" format="string" />
+        </setting>
+        <setting id="url_volleyball" type="string" label="URL HLS/DASH">
+          <default></default>
+          <control type="edit" format="string" />
+        </setting>
+      </group>
+      <group id="tennis" label="Tenis">
+        <setting id="label_tennis" type="string" label="Nazwa streamu">
+          <default>Tenis</default>
+          <control type="edit" format="string" />
+        </setting>
+        <setting id="url_tennis" type="string" label="URL HLS/DASH">
+          <default></default>
+          <control type="edit" format="string" />
+        </setting>
+      </group>
+      <group id="motorsport" label="Sporty motorowe">
+        <setting id="label_motorsport" type="string" label="Nazwa streamu">
+          <default>Sporty motorowe</default>
+          <control type="edit" format="string" />
+        </setting>
+        <setting id="url_motorsport" type="string" label="URL HLS/DASH">
+          <default></default>
+          <control type="edit" format="string" />
+        </setting>
+      </group>
+      <group id="combat" label="Sporty walki">
+        <setting id="label_combat" type="string" label="Nazwa streamu">
+          <default>Sporty walki</default>
+          <control type="edit" format="string" />
+        </setting>
+        <setting id="url_combat" type="string" label="URL HLS/DASH">
+          <default></default>
+          <control type="edit" format="string" />
+        </setting>
+      </group>
+      <group id="hockey" label="Hokej">
+        <setting id="label_hockey" type="string" label="Nazwa streamu">
+          <default>Hokej</default>
+          <control type="edit" format="string" />
+        </setting>
+        <setting id="url_hockey" type="string" label="URL HLS/DASH">
+          <default></default>
+          <control type="edit" format="string" />
+        </setting>
+      </group>
+      <group id="other" label="Inne sporty">
+        <setting id="label_other" type="string" label="Nazwa streamu">
+          <default>Inne sporty</default>
+          <control type="edit" format="string" />
+        </setting>
+        <setting id="url_other" type="string" label="URL HLS/DASH">
+          <default></default>
+          <control type="edit" format="string" />
+        </setting>
+      </group>
+    </category>
+  </section>
+</settings>
