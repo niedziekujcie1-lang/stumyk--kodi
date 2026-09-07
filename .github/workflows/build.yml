@@ -31,9 +31,30 @@ jobs:
 
           source = Path('plugin.video.strumyk/main.py').read_text(encoding='utf-8')
           compile(source, 'plugin.video.strumyk/main.py', 'exec')
-          for path in ['plugin.video.strumyk/addon.xml', 'repository.strumyk/addon.xml']:
+          for path in [
+              'plugin.video.strumyk/addon.xml',
+              'plugin.video.strumyk/resources/settings.xml',
+              'repository.strumyk/addon.xml',
+          ]:
               ET.parse(path)
               print('XML OK:', path)
+          PY
+
+      - name: Validate Kodi settings identifiers
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          root = ET.parse('plugin.video.strumyk/resources/settings.xml').getroot()
+          assert root.tag == 'settings'
+          assert root.attrib.get('version') == '1'
+          section = root.find("section[@id='plugin.video.strumyk']")
+          assert section is not None
+          settings = section.findall('.//setting')
+          ids = [s.attrib['id'] for s in settings]
+          assert len(ids) == len(set(ids))
+          for setting_id in ids:
+              assert setting_id.startswith(('label_', 'url_'))
+          print('Settings validation OK:', len(ids), 'settings')
           PY
 
       - name: Build repository metadata and ZIPs
@@ -131,8 +152,8 @@ jobs:
           from xml.etree import ElementTree as ET
           root = ET.parse('site/addons.xml').getroot()
           addons = {a.attrib['id']: a.attrib['version'] for a in root.findall('addon')}
-          assert addons['plugin.video.strumyk'] == '0.1.2'
-          assert addons['repository.strumyk'] == '1.0.4'
+          assert addons['plugin.video.strumyk'] == '0.1.3'
+          assert addons['repository.strumyk'] == '1.0.5'
           assert pathlib.Path('site/addons.xml.sha256').read_text().strip()
           assert pathlib.Path('site/addons.xml.md5').read_text().strip()
           for p in pathlib.Path('site').glob('*/*.zip'):
@@ -143,6 +164,7 @@ jobs:
                   assert f'{root_name}/icon.png' in names
                   if root_name == 'plugin.video.strumyk':
                       assert f'{root_name}/main.py' in names
+                      assert f'{root_name}/resources/settings.xml' in names
                   assert not any(n.endswith(('.pyc', '.pyo')) or '/__pycache__/' in n for n in names)
           print('Repository package verification OK')
           PY
@@ -181,8 +203,8 @@ jobs:
           import xml.etree.ElementTree as ET
           root = ET.parse('addons.xml').getroot()
           addons = {a.attrib['id']: a.attrib['version'] for a in root.findall('addon')}
-          assert addons['plugin.video.strumyk'] == '0.1.2'
-          assert addons['repository.strumyk'] == '1.0.4'
+          assert addons['plugin.video.strumyk'] == '0.1.3'
+          assert addons['repository.strumyk'] == '1.0.5'
           PY
           curl -fsSL --retry 3 --retry-delay 2 "$base/addons.xml.sha256" -o addons.xml.sha256
           python - <<'PY'
@@ -191,14 +213,14 @@ jobs:
           expected = pathlib.Path('addons.xml.sha256').read_text().split()[0]
           assert hashlib.sha256(data).hexdigest() == expected
           PY
-          curl -fsSL --retry 3 --retry-delay 2 "$base/plugin.video.strumyk/plugin.video.strumyk-0.1.2.zip" -o plugin.zip
-          curl -fsSL --retry 3 --retry-delay 2 "$base/repository.strumyk/repository.strumyk-1.0.4.zip" -o repo.zip
+          curl -fsSL --retry 3 --retry-delay 2 "$base/plugin.video.strumyk/plugin.video.strumyk-0.1.3.zip" -o plugin.zip
+          curl -fsSL --retry 3 --retry-delay 2 "$base/repository.strumyk/repository.strumyk-1.0.5.zip" -o repo.zip
           unzip -tq plugin.zip
           unzip -tq repo.zip
           python - <<'PY'
           import zipfile
           checks = [
-              ('plugin.zip', 'plugin.video.strumyk', ['plugin.video.strumyk/addon.xml', 'plugin.video.strumyk/main.py', 'plugin.video.strumyk/icon.png']),
+              ('plugin.zip', 'plugin.video.strumyk', ['plugin.video.strumyk/addon.xml', 'plugin.video.strumyk/main.py', 'plugin.video.strumyk/icon.png', 'plugin.video.strumyk/resources/settings.xml']),
               ('repo.zip', 'repository.strumyk', ['repository.strumyk/addon.xml', 'repository.strumyk/icon.png']),
           ]
           for filename, root_name, required in checks:
