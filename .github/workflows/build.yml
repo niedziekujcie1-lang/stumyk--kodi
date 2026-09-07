@@ -85,8 +85,8 @@ jobs:
           import pathlib, zipfile
           from xml.etree import ElementTree as ET
           ET.parse('site/addons.xml')
-          assert pathlib.Path('site/addons.xml.md5').read_text().strip()
           assert pathlib.Path('site/addons.xml.sha256').read_text().strip()
+          assert pathlib.Path('site/addons.xml.md5').read_text().strip()
           for p in pathlib.Path('site').glob('*/*.zip'):
               with zipfile.ZipFile(p) as z:
                   names = z.namelist()
@@ -122,9 +122,19 @@ jobs:
             sleep 5
           done
           test -s addons.xml
-          grep -q 'plugin.video.strumyk' addons.xml
-          grep -q 'repository.strumyk' addons.xml
-          curl -fsSI --retry 3 --retry-delay 2 "$base/plugin.video.strumyk/plugin.video.strumyk-0.1.0.zip"
-          curl -fsSI --retry 3 --retry-delay 2 "$base/repository.strumyk/repository.strumyk-1.0.1.zip"
-          curl -fsSL --retry 3 --retry-delay 2 "$base/addons.xml.md5" | grep -Eq '^[0-9a-fA-F]{32}$'
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          root = ET.parse('addons.xml').getroot()
+          addons = {a.attrib['id']: a.attrib['version'] for a in root.findall('addon')}
+          print(addons)
+          assert 'plugin.video.strumyk' in addons
+          assert 'repository.strumyk' in addons
+          open('versions.env', 'w', encoding='utf-8').write(
+              f"PLUGIN_VERSION={addons['plugin.video.strumyk']}\nREPO_VERSION={addons['repository.strumyk']}\n"
+          )
+          PY
+          . ./versions.env
+          curl -fsSI --retry 3 --retry-delay 2 "$base/plugin.video.strumyk/plugin.video.strumyk-${PLUGIN_VERSION}.zip"
+          curl -fsSI --retry 3 --retry-delay 2 "$base/repository.strumyk/repository.strumyk-${REPO_VERSION}.zip"
+          curl -fsSL --retry 3 --retry-delay 2 "$base/addons.xml.sha256" | grep -Eq '^[0-9a-fA-F]{64}$'
           echo 'GitHub Pages smoke test: OK'
