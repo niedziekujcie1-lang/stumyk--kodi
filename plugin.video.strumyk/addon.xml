@@ -11,6 +11,6 @@
     <description>Framework for Kodi 21 Omega. It does not bypass DRM, authentication, paywalls, or access controls.</description>
     <platform>all</platform>
     <license>GPL-3.0-or-later</license>
-    <assets><icon>icon.png</icon></assets>
+    <assets><icon>icon.svg</icon></assets>
   </extension>
 </addon>
