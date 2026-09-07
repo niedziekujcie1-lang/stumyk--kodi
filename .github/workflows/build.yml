@@ -131,8 +131,8 @@ jobs:
           from xml.etree import ElementTree as ET
           root = ET.parse('site/addons.xml').getroot()
           addons = {a.attrib['id']: a.attrib['version'] for a in root.findall('addon')}
-          assert addons['plugin.video.strumyk'] == '0.1.1'
-          assert addons['repository.strumyk'] == '1.0.3'
+          assert addons['plugin.video.strumyk'] == '0.1.2'
+          assert addons['repository.strumyk'] == '1.0.4'
           assert pathlib.Path('site/addons.xml.sha256').read_text().strip()
           assert pathlib.Path('site/addons.xml.md5').read_text().strip()
           for p in pathlib.Path('site').glob('*/*.zip'):
@@ -141,6 +141,8 @@ jobs:
                   root_name = p.parent.name
                   assert f'{root_name}/addon.xml' in names
                   assert f'{root_name}/icon.png' in names
+                  if root_name == 'plugin.video.strumyk':
+                      assert f'{root_name}/main.py' in names
                   assert not any(n.endswith(('.pyc', '.pyo')) or '/__pycache__/' in n for n in names)
           print('Repository package verification OK')
           PY
